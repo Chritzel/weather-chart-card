@@ -239,7 +239,7 @@ class WeatherChartCard extends LitElement {
                 }
                 else
                 {
-                  return weekday + '\n' + time;
+                  return weekday + ' - ' + time;
                 }                
               }
             }
