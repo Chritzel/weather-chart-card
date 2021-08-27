@@ -129,8 +129,10 @@ class WeatherChartCard extends LitElement {
     var forecast = weather.attributes.forecast.slice(0, forecastItems);
     if (new Date(forecast[1].datetime) - new Date(forecast[0].datetime) === 36e5)
       var mode = 'hourly';
-    else
+    else if(new Date(forecast[1].datetime) - new Date(forecast[0].datetime) === 864e5)
       var mode = 'daily';
+    else
+      var mode = 'hybrid';
     var i;
     var dateTime = [];
     var tempHigh = [];
@@ -231,7 +233,14 @@ class WeatherChartCard extends LitElement {
                 if (mode == 'hourly') {
                   return time;
                 }
-                return weekday;
+                else if(mode == 'daily')
+                {
+                  return weekday;
+                }
+                else
+                {
+                  return weekday + '\n' + time;
+                }                
               }
             }
           },
