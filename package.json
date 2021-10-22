@@ -16,12 +16,13 @@
   "license": "MIT",
   "dependencies": {
     "chart.js": "^3.5.1",
-    "chartjs-plugin-datalabels": "^2.0.0"
+    "chartjs-plugin-datalabels": "^2.0.0",
+    "jslint": "^0.12.1"
   },
   "devDependencies": {
-    "eslint": "^5.16.0",
     "acorn": "^8.4.1",
-    "rollup": "^2.33.1",
+    "eslint": "^5.16.0",
+    "rollup": "^2.56.3",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-serve": "^1.1.0"
   },
