@@ -120,6 +120,7 @@ class WeatherChartCard extends LitElement {
     if (this.forecastChart) {
       this.forecastChart.destroy();
     }
+    this.forecastItems = config.items ? config.items : this.forecastItems;
     var tempHiColor = config.temp1_color ? config.temp1_color : 'rgba(230, 100, 100, 1.0)';
     var tempLoColor = config.temp2_color ? config.temp2_color : 'rgba(68, 115, 158, 1.0)';
     var precipColor = config.precip_color ? config.precip_color : 'rgba(132, 209, 253, 1.0)';
@@ -133,6 +134,11 @@ class WeatherChartCard extends LitElement {
       var mode = 'daily';
     else
       var mode = 'hybrid';
+
+    if (config.items && forecast.length == config.items && new Date(forecast[config.items - 1].datetime) - new Date(forecast[0].datetime) > 1728e5) {
+      var mode = 'daily';
+    }
+
     var i;
     var dateTime = [];
     var tempHigh = [];
@@ -147,10 +153,30 @@ class WeatherChartCard extends LitElement {
       }
       precip.push(d.precipitation);
     }
+
+    // Determine max and min temp values for each day
+    var maxTempOfDay = {};
+    var minTempOfDay = {};
+    for (i = 0; i < forecast.length; i++) {
+      var day = new Date(dateTime[i]).getDate();
+      var temp = tempHigh[i];
+
+      if(!minTempOfDay[day] || minTempOfDay[day] > temp)
+      {
+        minTempOfDay[day] = temp;
+      }
+      if(!maxTempOfDay[day] || maxTempOfDay[day] < temp)
+      {
+        maxTempOfDay[day] = temp;
+      }
+    }
+
     var style = getComputedStyle(document.body);
     var backgroundColor = style.getPropertyValue('--card-background-color');
     var textColor = style.getPropertyValue('--primary-text-color');
     var dividerColor = style.getPropertyValue('--divider-color');
+    var dividerColor = style.getPropertyValue('--divider-color');
+    var lightDividerColor = "#7F7F7F";
     const ctx = this.renderRoot.querySelector('#forecastChart').getContext('2d');
 
     Chart.defaults.color = textColor;
@@ -172,6 +198,7 @@ class WeatherChartCard extends LitElement {
           yAxisID: 'TempAxis',
           borderColor: tempHiColor,
           backgroundColor: tempHiColor,
+          fill: '+1'
         },
         {
           label: this.ll('tempLo'),
@@ -214,33 +241,45 @@ class WeatherChartCard extends LitElement {
           }
         },
         scales: {
-          DateTimeAxis: {
+          // TimeAxis: {
+          //   position: 'top',
+          //   grid: {
+          //     drawBorder: false,
+          //     drawTicks: false,
+          //     zeroLineColor: lightDividerColor,
+          //     color: lightDividerColor,
+          //   },
+          //   ticks: {
+          //     align: "center",
+          //     maxRotation: 0,
+          //     padding: 8,
+          //     callback: function(value, index, ticks) {
+          //       var datetime = this.getLabelForValue(value);
+          //       var time = new Date(datetime).toLocaleTimeString(language,
+          //         { hour12: false, hour: 'numeric', minute: 'numeric' });
+          //         return time;
+          //     }
+          //   }
+          // },
+          DateAxis: {
             position: 'top',
             grid: {
-              drawBorder: false,
+              drawBorder: true,
               drawTicks: false,
               zeroLineColor: dividerColor,
             },
             ticks: {
+              align: "center",
               maxRotation: 0,
               padding: 8,
-              callback: function(value, index, values) {
+              callback: function(value, index, ticks) {
                 var datetime = this.getLabelForValue(value);
                 var weekday = new Date(datetime).toLocaleDateString(language,
                   { weekday: 'short' });
-                var time = new Date(datetime).toLocaleTimeString(language,
-                  { hour12: false, hour: 'numeric', minute: 'numeric' });
-                if (mode == 'hourly') {
-                  return time;
-                }
-                else if(mode == 'daily')
+                if( index === 0 || new Date(datetime).getHours() === 12)
                 {
                   return weekday;
                 }
-                else
-                {
-                  return weekday + ' - ' + time;
-                }                
               }
             }
           },
@@ -290,7 +329,21 @@ class WeatherChartCard extends LitElement {
             },
             formatter: function(value, context) {
               return context.dataset.data[context.dataIndex] + '°';
-            }
+            },
+            // display: 'auto',
+            display: function(context) {
+              var temp = context.dataset.data[context.dataIndex];
+              var day = new Date(dateTime[context.dataIndex]).getDate();
+              if(temp === maxTempOfDay[day] || temp === minTempOfDay[day])
+              {
+                return 'auto';
+              }
+              else
+              {
+                return false;
+              }
+              // return context.dataset.data[context.dataIndex] !== 0 ? 'auto' : false;
+            },
           },
           tooltip: {
             caretSize: 0,
@@ -441,6 +494,7 @@ class WeatherChartCard extends LitElement {
           <div class="chart-container">
             <canvas id="forecastChart"></canvas>
           </div>
+          ${(!config.hide_conditions ? html`
           <div
             class="conditions"
             @click="${(e) => this.showMoreInfo(config.weather)}"
@@ -459,6 +513,7 @@ class WeatherChartCard extends LitElement {
               }
             `)}
           </div>
+          ` : html``)}
         </div>
       </ha-card>
     `;
